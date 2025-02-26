@@ -1,0 +1,43 @@
+name: Fraud Detection Pipeline
+
+on:
+  workflow_dispatch:  # Allow manual triggering
+  push:
+    paths:
+      - 'data/new_transactions/**'  # Run when new data is pushed
+
+jobs:
+  process_data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Run fraud detection
+      run: python fraud_detection_pipeline.py
+      
+    - name: Upload results
+      uses: actions/upload-artifact@v2
+      with:
+        name: fraud-detection-results
+        path: results/
+        
+    - name: Commit results back to the repository
+      if: success()
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add results/
+        git commit -m "Update fraud detection results" || echo "No changes to commit"
+        git push
